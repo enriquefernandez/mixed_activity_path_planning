@@ -1,4 +1,4 @@
-function [ytraj, cost, max_t]= findMixedTrajectory(safe_regions_seq, start, goal, vmax)
+function [ytraj, cost, max_t]= findLinearTrajectory(safe_regions_seq, start, goal, vmax)
 % Assumes start in first safe_region, goal in last safe region
 % safe_regions_seq ordered list of intersecting regions from start to goal
 

@@ -59,7 +59,8 @@ classdef MISOSTrajectoryProblem
     sizecheck(goal, [dim, nan]);
 
 
-    C_BOUND = 10;
+%     C_BOUND = 10;
+    C_BOUND = 1e5; % Enrique's change...
     SIGMA_BOUND = 1000;
 
     t = sdpvar(1,1);

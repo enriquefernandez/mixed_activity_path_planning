@@ -142,7 +142,8 @@ toc
 
 tic
 poly_deg = 3;
-num_seg = 10;
+% num_seg = 10;
+num_seg = 7;
 ytraj = findMixedTrajectory(safe_regions, start, goal, lb, ub, [], poly_deg, num_seg, [])
 tmax = ytraj.tspan(2);
 t = 0:0.01:tmax;
