@@ -13,6 +13,50 @@ classdef BezierPartTrajectory
             end
         end
         
+        function y = applyFunction(obj, func_handle, t)
+            % Assumes t is an ORDERED vector between [0,1]
+            % Evaluates the trajectory in that vector
+            n = size(obj.P{1},1) - 1;
+%             m = size(obj.P{1},2);
+            M = length(obj.P);
+%             num_p = length(t);
+            i = 1:M;
+            increment = 1/M;
+            stops = [0 i*increment];
+            
+            % From MATLAB's ppval fun
+            sizet = size(t); lt = numel(t); t = reshape(t,1,lt);
+            %  if XX is row vector, suppress its first dimension
+            if length(sizet)==2&&sizet(1)==1, sizet(1) = []; end
+
+            % take apart PP
+%             [b,c,l,k,dd]=unmkpp(pp);
+
+            % for each evaluation site, compute its breakpoint interval
+            % (mindful of the possibility that xx might be empty)
+            if lt, [~,index] = histc(t,[-inf,stops(2:M),inf]);
+            else index = ones(1,lt);
+            end
+
+            % adjust for troubles, like evaluation sites that are NaN or +-inf
+            inft = find(t==inf); if ~isempty(inft), index(inft) = M; end
+            nogoodt = find(index==0);
+            if ~isempty(nogoodt), t(nogoodt) = NaN; index(nogoodt) = 1; end
+
+            % now go to local coordinates ...
+            t = (t-stops(index)) / increment;
+            
+            unique_idx = unique(index);
+%             y = zeros(num_p, m);
+            
+            for j=1:length(unique_idx)
+                part_j = unique_idx(j);
+                bez_j = BezierTrajectory(obj.P{part_j});
+%                 y(index == part_j, :) = bez_j.(func_name)(t(index == part_j))
+                y(index == part_j, :) = func_handle(bez_j, t(index == part_j));
+            end
+        end
+        
         function traj = evaluate(obj, t)
             % Assumes t is an ORDERED vector between [0,1]
             % Evaluates the trajectory in that vector
@@ -55,6 +99,14 @@ classdef BezierPartTrajectory
                 traj(index == part_j, :) = bez_j.evaluate(t(index == part_j))
             end
             
+        end
+        
+        function y = curvature(obj, t)
+            y = obj.applyFunction(@(bez, t) bez.curvature(t), t);
+        end
+        
+        function y = getDerivative(obj, d, t)
+            y = obj.applyFunction(@(bez, t) bez.getDerivative(d,t), t);
         end
         
         function plot(obj)

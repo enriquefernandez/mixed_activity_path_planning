@@ -28,6 +28,30 @@ classdef BezierTrajectory
             plot(traj(:,1), traj(:,2), 'b')
         end
         
+        function traj = getDerivative(obj, d, t)
+            n = size(obj.P,1) - 1;
+            m = size(obj.P, 2);
+            
+            if d==0
+                traj = obj.evaluate(t);
+            else
+%                 Pd = zeros(n,m);
+                Pd = [];
+                for i=1:n
+%                     Pd(i,:) = n * (obj.P(i+1,:) - obj.P(i,:));
+                    Pd = [Pd; n * (obj.P(i+1,:) - obj.P(i,:))];
+                end
+                bezd = BezierTrajectory(Pd);
+                traj = bezd.getDerivative(d-1, t);
+            end
+        end
+        
+        function y = curvature(obj, t)
+            xd = obj.getDerivative(1,t);
+            xdd = obj.getDerivative(2,t);
+            
+            y = (xd(:,1) .* xdd(:, 2) - xd(:, 2) .* xdd(:, 1)) ./ (sum(xd .* xd, 2).^(3/2));
+        end
         
     end
     
