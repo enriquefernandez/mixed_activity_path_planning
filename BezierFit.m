@@ -15,7 +15,8 @@ goal = [5;11];
 goal_ori = -pi; %pi/3;
 
 V{1} = [0 0; 0 3; 7 -1; 7 -4];
-V{2} = [4 -1; 6 12; 10 12; 9 -2];
+% V{2} = [4 -1; 6 12; 10 12; 9 -2];
+V{2} = [6.1 -1; 6 12; 10 12; 9 -2];
 V{3} = [4 11; 5 12; 13 4; 12 0];
 
 % Generate safe regions, and plot stuff
@@ -96,6 +97,7 @@ end
     
     
 %% Arc length objective
+% http://pomax.github.io/bezierinfo/#arclength
 [x, w] = lgwt(20,0,1)
 obj = 0;
 P_joint = {}
@@ -107,8 +109,33 @@ for i = 1:3
     P_joint{i} = Pi_obj;
     bb = BezierTrajectory(Pi_obj);
     deriv = bb.getDerivative(1, x);
-    obj = obj +  w' * sum(deriv .* deriv, 2);
-%     obj = obj +  w' * sqrtm(sum(deriv .* deriv, 2));
+    obj = obj +  w' * sum(deriv .* deriv, 2); % Aprox method, quadratic
+%     obj = obj +  w' * sqrtm(sum(deriv .* deriv, 2)); % 'Exact', nonlinear
+end
+
+%% Mixed curvature - arc length objective
+
+[x, w] = lgwt(20,0,1);
+k_arclength = 1;
+k_curvature = 0.001;
+obj = 0;
+P_joint = {};
+for i = 1:3
+    Pi_obj = [];
+    for j=1:length(P{i})
+        Pi_obj = [Pi_obj;  P{i}{j}];    
+    end
+    P_joint{i} = Pi_obj;
+    bb = BezierTrajectory(Pi_obj);
+    deriv = bb.getDerivative(1, x);
+    obj = obj +  k_arclength * w' * sum(deriv .* deriv, 2); % Aprox method, quadratic
+%     obj = obj +  w' * sqrtm(sum(deriv .* deriv, 2)); % 'Exact', nonlinear
+    xd = bb.getDerivative(1, x);
+    xdd = bb.getDerivative(2, x);
+    curv_prop = xd(:,1) .* xdd(:, 2) - xd(:, 2) .* xdd(:, 1);
+    obj = obj + k_curvature * w' * (curv_prop .* curv_prop);
+
+%     curv_prop = xd(:,1) .* xdd(:, 2) - xd(:, 2) .* xdd(:, 1);
 end
 
 %% Curvature objective
@@ -134,10 +161,29 @@ end
 % constraints = [constraints curv < 2];
 % obj = sum(curv);
 
+% P_joint = {}
+% t_curv=0:0.1:1;
+% % t_curv = [0 1];
+% for i = 1:3
+%     Pi_obj = [];
+%     for j=1:length(P{i})
+%         Pi_obj = [Pi_obj;  P{i}{j}];    
+%     end
+%     P_joint{i} = Pi_obj;
+%     bb = BezierTrajectory(Pi_obj);
+%     xd = bb.getDerivative(1, t_curv);
+%     xdd = bb.getDerivative(2, t_curv);
+%     curv_prop = xd(:,1) .* xdd(:, 2) - xd(:, 2) .* xdd(:, 1);
+%     curv_den = (sum(xd .* xd,2)) .^ (3/2);
+%     
+%     constraints = [constraints curv_prop < 10 * curv_den];  
+%     constraints = [constraints curv_prop > -10 * curv_den];
+% end
+
 %% Solve
 
 options = sdpsettings('verbose',1);
-% options = sdpsettings('verbose',1, 'solver','snopt');
+options = sdpsettings('verbose',1, 'solver','snopt');
 % options = sdpsettings('verbose',1, 'solver','gurobi');
 % options = sdpsettings('verbose',1, 'solver','mosek');
 % obj = -c0 - cf;
