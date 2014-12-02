@@ -53,6 +53,55 @@ classdef BezierTrajectory
             y = (xd(:,1) .* xdd(:, 2) - xd(:, 2) .* xdd(:, 1)) ./ (sum(xd .* xd, 2).^(3/2));
         end
         
+        function C = polynomialCoefficients(obj)
+            n = size(obj.P,1) - 1;
+            C = [];
+            for j=0:n
+                Cj = 0;
+                for i=0:j
+                    Cj = Cj + ( (-1)^(i+j) * obj.P(i+1, :)') / (factorial(i) * factorial(j-i));
+                end
+                Cj = Cj * factorial(n)/factorial(n-j);
+                C = [Cj C];
+            end            
+        end
+        
+        function I = snapIntegral(obj)
+            
+            function p2 = squarePoly(p)
+                if length(p)==1
+                    p2 = p * p;
+               elseif length(p)==2
+                   p2 = [p(1)*p(1), 2*p(1)*p(2), p(2)*p(2)];
+               else
+                   error('Snap supported for n=5 max');
+               end
+            end
+            
+           I = 0;
+           p = obj.polynomialCoefficients();
+           px = p(1,:);
+           py = p(2,:);
+           
+           % Calc fourth derivative (snap)
+           for i=1:4
+               px = polyder(px);
+               py = polyder(py);
+           end
+           
+           % Square norm of snap
+           
+%            s2_x = conv(px, px);
+%            s2_y = conv(py, py);
+            s2_x = squarePoly(px);
+            s2_y = squarePoly(py);
+           
+           % Integral in [0,1]
+           I = I + sum(polyint(s2_x));
+           I = I + sum(polyint(s2_y));
+           
+        end
+        
     end
     
     

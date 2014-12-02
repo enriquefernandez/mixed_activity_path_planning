@@ -8,11 +8,12 @@ clf; hold on; grid on;
 % Configuration
 arrow_length=0.5;
 start = [1;2];
-start_ori = -pi/6;
+start_ori = -3*pi/6;
 
-goal = [5;11];
+% goal = [5;11];
 % goal = [12;2];
-goal_ori = -pi; %pi/3;
+goal = [11;2];
+goal_ori = -pi/2-pi/4; %pi/3;
 
 V{1} = [0 0; 0 3; 7 -1; 7 -4];
 % V{2} = [4 -1; 6 12; 10 12; 9 -2];
@@ -133,9 +134,25 @@ for i = 1:3
     xd = bb.getDerivative(1, x);
     xdd = bb.getDerivative(2, x);
     curv_prop = xd(:,1) .* xdd(:, 2) - xd(:, 2) .* xdd(:, 1);
-    obj = obj + k_curvature * w' * (curv_prop .* curv_prop);
+%     obj = obj + k_curvature * w' * (curv_prop .* curv_prop);
+    obj = obj + k_curvature * w' * (curv_prop);
 
 %     curv_prop = xd(:,1) .* xdd(:, 2) - xd(:, 2) .* xdd(:, 1);
+end
+
+%% Minimum snap objective
+
+
+obj = 0;
+P_joint = {};
+for i = 1:3
+    Pi_obj = [];
+    for j=1:length(P{i})
+        Pi_obj = [Pi_obj;  P{i}{j}];    
+    end
+    P_joint{i} = Pi_obj;
+    bb = BezierTrajectory(Pi_obj);
+    obj = obj + bb.snapIntegral();
 end
 
 %% Curvature objective
@@ -161,29 +178,29 @@ end
 % constraints = [constraints curv < 2];
 % obj = sum(curv);
 
-% P_joint = {}
-% t_curv=0:0.1:1;
-% % t_curv = [0 1];
-% for i = 1:3
-%     Pi_obj = [];
-%     for j=1:length(P{i})
-%         Pi_obj = [Pi_obj;  P{i}{j}];    
-%     end
-%     P_joint{i} = Pi_obj;
-%     bb = BezierTrajectory(Pi_obj);
-%     xd = bb.getDerivative(1, t_curv);
-%     xdd = bb.getDerivative(2, t_curv);
-%     curv_prop = xd(:,1) .* xdd(:, 2) - xd(:, 2) .* xdd(:, 1);
-%     curv_den = (sum(xd .* xd,2)) .^ (3/2);
-%     
-%     constraints = [constraints curv_prop < 10 * curv_den];  
-%     constraints = [constraints curv_prop > -10 * curv_den];
-% end
+P_joint = {}
+t_curv=0:0.1:1;
+% t_curv = [0 1];
+for i = 1:3
+    Pi_obj = [];
+    for j=1:length(P{i})
+        Pi_obj = [Pi_obj;  P{i}{j}];    
+    end
+    P_joint{i} = Pi_obj;
+    bb = BezierTrajectory(Pi_obj);
+    xd = bb.getDerivative(1, t_curv);
+    xdd = bb.getDerivative(2, t_curv);
+    curv_prop = xd(:,1) .* xdd(:, 2) - xd(:, 2) .* xdd(:, 1);
+    curv_den = (sum(xd .* xd,2)) .^ (3/2);
+    
+    constraints = [constraints curv_prop < 10 * curv_den];  
+    constraints = [constraints curv_prop > -10 * curv_den];
+end
 
 %% Solve
 
 options = sdpsettings('verbose',1);
-options = sdpsettings('verbose',1, 'solver','snopt');
+% options = sdpsettings('verbose',1, 'solver','snopt');
 % options = sdpsettings('verbose',1, 'solver','gurobi');
 % options = sdpsettings('verbose',1, 'solver','mosek');
 % obj = -c0 - cf;
