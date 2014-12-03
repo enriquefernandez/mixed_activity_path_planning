@@ -16,7 +16,7 @@ MAX_VEL = 0.25;
 lb = [-20; -20; -MAX_VEL; -MAX_VEL];
 ub = [20; 20; MAX_VEL; MAX_VEL];
 num_random_obs = 20;
-n_regions = 17;
+n_regions = 20;
 
 %Obstacle parameters
 OBSTACLE_DENSITY=1.2; %obstacles per 1 unit in z
@@ -58,7 +58,7 @@ for i=1:length(v)
     interest_reg_means(i,:) = m;
     V = [V; V(1,:)];    
     plot(V(:,1), V(:,2), 'Color', 'b', 'LineStyle', '--', 'LineWidth', 1.5);
-    text(m(1),m(2), k{i});
+    text(m(1),m(2), k{i}, 'FontSize', 18, 'HorizontalAlignment', 'center');
     fprintf('%s area plotted.\n',k{i});
 end
 
@@ -108,6 +108,7 @@ seeds = [interest_reg_means' [14 -6]'];
 num_steps = 25;
 safe_regions = iris.util.auto_seed_regions(obstacle_pts, lb(1:2), ub(1:2), seeds, n_regions, num_steps, []);
 
+% Plot regions
 for j = 1:length(safe_regions)
     V = iris.thirdParty.polytopes.lcon2vert(safe_regions(j).A, safe_regions(j).b);
     V = V';
@@ -154,9 +155,76 @@ tic
 [C, paths] = apsp(G)
 toc
 
+% Find mapping from interest regions to safe regions
+k = interest_regions.keys;
+v = interest_regions.values;
+interest_to_safe = containers.Map;
+for i=1:length(v)
+    region_name = k{i};
+    % Find best safe region
+    best_vol = 0;
+    for j=1:num_regions
+        intersection = safe_regions(j).P.intersect(v{i});
+        intersection_vol = intersection.volume ;
+        if intersection_vol > best_vol
+            best_vol = intersection_vol;
+            interest_to_safe(region_name) = j;
+        end
+    end
+end
+
 
 %% Find all pairs linear trajectories: distances + time
+cost_matrix = {};
+k = interest_regions.keys;
+v = interest_regions.values;
+for i=1:length(v)
+    region_name1 = k{i};
+    region1 = v{i};
+    for j=i:length(v)
+        region2 = v{j};
+        region_name2 = k{j};
+        if ~(region1==region2)
+           safe_reg_path = extractAPSPpath(paths, interest_to_safe(region_name1), interest_to_safe(region_name2));
+           tic
+           [ytraj, cost, time] = findLinearTrajectory(safe_regions(safe_reg_path), region1, region2, MAX_VEL);
+           toc
+           
+           cost_element1 = {region_name1 region_name2 cost time};
+           cost_element2 = {region_name2 region_name1 cost time};
+           cost_matrix = {cost_matrix{:} cost_element1 cost_element2};
+           
+%            % plot trajectory
+            tmax = ytraj.tspan(2);
+            t = 0:0.01:tmax;
+            xtr = ytraj.eval(t);
+            hold on
+            
+            
+            % plot safe regions
+            region_path = [];
+            for l=1:length(safe_reg_path)
+                reg_idx = safe_reg_path(l);
+                V = safe_regions(reg_idx).P.V;
+                V = [V; V(1,:)];
+                V = V(convhull(V), :);
+                region_path(l) = plot(V(:,1), V(:,2), 'Color', 'm', 'LineStyle', '--', 'LineWidth', 2.0);
+            end
+            line_plot = plot(xtr(1,:), xtr(2,:), 'g--', 'LineWidth', 3.5);
+            
+            pause(0.1);
+            delete(line_plot);
+            delete(region_path);
+        end
+    end
+end
 
+%% Print results
+   fprintf('Pairwise distances:\n');
+for i=1:length(cost_matrix)
+   element = cost_matrix{i};
+   fprintf('%s  ->  %s  [%.3f]  [%.3f]\n', element{1}, element{2}, element{3}, element{4});
+end
 
 %% Write PDDL actions from all pairs linear trajectories
 

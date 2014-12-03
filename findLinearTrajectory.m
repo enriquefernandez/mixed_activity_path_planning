@@ -1,6 +1,9 @@
 function [ytraj, cost, max_t]= findLinearTrajectory(safe_regions_seq, start, goal, vmax)
-% Assumes start in first safe_region, goal in last safe region
+
+% Start and end can either be 2x1 vectors (contained in the last and end
+% safe regions), or Polyhedrons (areas that need to be reached).
 % safe_regions_seq ordered list of intersecting regions from start to goal
+
 
 
 % Define Yalmip variables
@@ -12,14 +15,18 @@ num_points = num_segments + 1;
 
 X = {};
 for i=1:num_points
-    X{i} = sdpvar(2,1);
+    X{i} = sdpvar(dim,1);
 end
 
 % Add constraints
 C = [];
-% Initial and end positions
-C = [C, X{1} == start];
-C = [C, X{num_points} == goal];
+
+
+% Initial and end positions or regions
+% C = [C, X{1} == start];
+% C = [C, X{num_points} == goal];
+C = addBoundaryConstraint(C, X{1}, start);
+C = addBoundaryConstraint(C, X{num_points}, goal);
 
 % Points along trajectory need to be in two consecutive regions
 for i=2:num_points-1
@@ -75,5 +82,16 @@ end
 ytraj = PPTrajectory(mkpp(breaks, coeffs, dim));
 cost = sqrt(value(obj));
 max_t = breaks(num_points);
+
+
+    function C = addBoundaryConstraint(C, opt_var, bound_condition)
+        if isa(bound_condition, 'Polyhedron')
+            C = [C, bound_condition.A * opt_var <= bound_condition.b];
+        elseif isa(bound_condition, 'double')
+            C = [C, opt_var == bound_condition];
+        else
+            error('Start and end can only be either arrays or Polyhedrons');
+        end
+    end
 
 end
