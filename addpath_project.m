@@ -4,5 +4,6 @@ addpath_pods
 addpath_iris
 addpath_gurobi
 addpath_mosek
+addpath_snopt
 addpath_drake
 mpt_init
