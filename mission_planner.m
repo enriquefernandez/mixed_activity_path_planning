@@ -8,7 +8,7 @@ handles.region_seed = [];
 handles.traj = [];
 handles.obs = [];
 clf
-hold on; grid on; %axis equal
+hold on; %axis equal
 
 %% Mission Setup
 seedval = 63 ;
@@ -58,7 +58,7 @@ for i=1:length(v)
     interest_reg_means(i,:) = m;
     V = [V; V(1,:)];    
     plot(V(:,1), V(:,2), 'Color', 'b', 'LineStyle', '--', 'LineWidth', 1.5);
-    text(m(1),m(2), k{i}, 'FontSize', 18, 'HorizontalAlignment', 'center');
+    text(m(1),m(2), k{i}, 'FontSize', 18, 'HorizontalAlignment', 'center', 'Color', 'b');
     fprintf('%s area plotted.\n',k{i});
 end
 
@@ -118,7 +118,7 @@ for j = 1:length(safe_regions)
     %     y = [cos(th);sin(th)];
     %     x = bsxfun(@plus, safe_regions(j).C(1:2,1:2)*y, safe_regions(j).d(1:2));
     %     handles.region_e(j) = plot(x(1,:), x(2,:), 'Color', [.3,.3,.9], 'LineStyle', '-', 'LineWidth', 1);
-    handles.region_seed(j) = plot(safe_regions(j).point(1), safe_regions(j).point(2), 'go', 'MarkerSize', 5, 'MarkerFaceColor', 'g');
+%     handles.region_seed(j) = plot(safe_regions(j).point(1), safe_regions(j).point(2), 'go', 'MarkerSize', 5, 'MarkerFaceColor', 'g');
 end
 
 
@@ -271,7 +271,65 @@ for i=1:length(navigate_paths)
     delete(line_plot);
 end
 
-%% Compute smooth trajectories for each travel activity
+%% Compute smooth bezier trajectories for each travel activity
+bez_trajectories = {};
+for i=1:length(navigate_paths)
+    region_name1 = navigate_paths{i}{1};
+    region_name2 = navigate_paths{i}{2};
+    fprintf('Bezier Path from %s to %s.\n', region_name1, region_name2);
+    region1 = interest_regions(region_name1);
+    region2 = interest_regions(region_name2);
+    reg1c = mean(region1.V);
+    reg2c = mean(region2.V);
+    safe_reg_path = extractAPSPpath(paths, interest_to_safe(region_name1), interest_to_safe(region_name2));
+    bezPart = findBezierTrajectory(safe_regions(safe_reg_path), reg1c', reg2c', MAX_VEL);
+%         plot(Psol{i}(:,1), Psol{i}(:,2), '+r')    
+    t=0:0.0001:1;
+    bez_t = bezPart.evaluate(t);
+    bez_plot = plot(bez_t(:,1), bez_t(:,2),'b--');
+    bez_trajectories{i} = bez_t;
+    hold on
+    
 
+    pause(1);
+    delete(bez_plot);
+end
 
-%% Execute mission?
+%% Compute smooth SOS poly trajectories for each travel activity
+sos_trajectories = {};
+for i=1:length(navigate_paths)
+    region_name1 = navigate_paths{i}{1};
+    region_name2 = navigate_paths{i}{2};
+    fprintf('SOS Path from %s to %s.\n', region_name1, region_name2);
+    region1 = interest_regions(region_name1);
+    region2 = interest_regions(region_name2);
+    reg1c = mean(region1.V);
+    reg2c = mean(region2.V);
+    
+    safe_reg_path = extractAPSPpath(paths, interest_to_safe(region_name1), interest_to_safe(region_name2));
+    
+    tic
+    poly_deg = 3;
+    num_seg = 10;
+    ytraj = findMixedTrajectory(safe_regions(safe_reg_path), reg1c', reg2c', lb, ub, [], poly_deg, num_seg, [])
+    tmax = ytraj.tspan(2);
+    t = 0:0.01:tmax;
+    xtr = ytraj.eval(t);
+    hold on
+    sos_plot = plot(xtr(1,:), xtr(2,:), 'm')
+    sos_trajectories{i} = xtr;
+    toc
+    
+
+    pause(1);
+    delete(sos_plot);
+end
+
+%% Load SOS paths
+sos_plot = [];
+for i=1:length(sos_trajectories)
+    xtr = sos_trajectories{i};
+    sos_plot(i) = plot(xtr(1,:), xtr(2,:), 'm--')    
+    pause()
+    delete(sos_plot(i))
+end
