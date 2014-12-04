@@ -1,0 +1,53 @@
+(define (problem quad_delivery) (:domain quadcopter)
+(:objects
+	
+	quad0 - Quadcopter
+	loc-a loc-b loc-c loc-d loc-e loc-opcenter - Location
+	loc-recharge1 loc-recharge2 - recharge-loc
+
+	packet-ae - Packet
+	packet-bc - Packet
+	packet-da - Packet
+
+	)
+(:init
+	
+	(= (energy quad0) 20)
+	(= (recharge-rate quad0) 5)
+	(at quad0 loc-opcenter)
+	(available quad0)
+	(can-pickup quad0)
+
+	(at packet-ae loc-a)
+	(at packet-bc loc-b)
+	(at packet-da loc-d)
+
+	(can-receive loc-a)
+	(can-receive loc-b)
+	(can-receive loc-c)
+	(can-receive loc-d)
+	(can-receive loc-e)
+	
+
+
+	; (can_traverse quad0 locA locB)
+	; (= (mintime locA locB) 15)
+	; (= (cost locA locB) 6)
+
+	%s
+)
+
+(:goal 
+
+(and
+	(at quad0 loc-opcenter)
+	
+	(at packet-ae loc-e)
+	(at packet-bc loc-c)
+	(at packet-da loc-a)
+)
+)
+
+(:metric minimize (total-time))
+; (:metric maximize (energy quad0))
+)

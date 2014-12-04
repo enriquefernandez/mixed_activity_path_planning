@@ -1,0 +1,31 @@
+Number of literals: 83
+Constructing lookup tables: [10%] [20%] [30%] [40%] [50%] [60%] [70%] [80%] [90%] [100%] [110%]
+Post filtering unreachable actions:  [10%] [20%] [30%] [40%] [50%] [60%] [70%] [80%] [90%] [100%] [110%]
+No semaphore facts found, returning
+No analytic limits found, not considering limit effects of goal-only operators
+Not looking for earlier-is-better time-dependent rewards: no goal limits
+17% of the ground temporal actions in this problem are compression-safe
+Initial heuristic = 19.000
+
+Resorting to best-first search
+b (17.000 | 331.862)b (16.000 | 331.862)b (15.000 | 333.863)b (14.000 | 333.863)b (13.000 | 651.639)b (10.000 | 723.069)b (9.000 | 723.071)b (7.000 | 854.279)b (5.000 | 979.829)b (5.000 | 941.729)b (4.000 | 979.829)b (3.000 | 981.830)b (2.000 | 981.830)b (1.000 | 1114.080);;;; Solution Found
+; States evaluated: 36524
+; Cost: 1114.080
+; Time 54.31
+0.000: (navigate quad0 loc-opcenter loc-recharge1)  [114.431]
+114.432: (recharge quad0 loc-recharge1)  [17.074]
+131.507: (navigate quad0 loc-recharge1 loc-b)  [71.090]
+202.598: (pickup quad0 packet-bc loc-b)  [2.000]
+204.599: (navigate quad0 loc-b loc-c)  [138.636]
+343.236: (deliver quad0 packet-bc loc-c)  [2.000]
+345.237: (navigate quad0 loc-c loc-a)  [101.466]
+446.704: (pickup quad0 packet-ae loc-a)  [2.000]
+448.705: (navigate quad0 loc-a loc-e)  [202.557]
+651.263: (deliver quad0 packet-ae loc-e)  [2.000]
+653.264: (navigate quad0 loc-e loc-recharge1)  [69.805]
+723.070: (recharge quad0 loc-recharge1)  [10.460]
+733.531: (navigate quad0 loc-recharge1 loc-d)  [62.408]
+795.940: (pickup quad0 packet-da loc-d)  [2.000]
+797.941: (navigate quad0 loc-d loc-a)  [185.383]
+983.325: (deliver quad0 packet-da loc-a)  [2.000]
+985.326: (navigate quad0 loc-a loc-opcenter)  [128.754]

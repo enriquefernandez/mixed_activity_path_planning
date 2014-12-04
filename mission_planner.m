@@ -42,11 +42,11 @@ interest_regions = containers.Map;
 interest_regions('opcenter') = Polyhedron([-18 -18; -18 -15; -15 -15; -15 -18]);
 interest_regions('recharge1') = Polyhedron([2 -1; 2 0; 3 0; 3 -1]);
 interest_regions('recharge2') = Polyhedron([17 11; 17 12; 18 12; 18 11]);
-interest_regions('A') = Polyhedron([-17 15; -17 17; -14 17; -14 15]);
-interest_regions('B') = Polyhedron([-1 -19; -1 -17; 2 -17; 2 -19]);
-interest_regions('C') = Polyhedron([9 13; 9 16; 10 16; 10 13]);
-interest_regions('D') = Polyhedron([17 -2; 17 1; 18 1; 18 -2]);
-interest_regions('E') = Polyhedron([17 -12; 17 -10; 19 -10; 19 -12]);
+interest_regions('a') = Polyhedron([-17 15; -17 17; -14 17; -14 15]);
+interest_regions('b') = Polyhedron([-1 -19; -1 -17; 2 -17; 2 -19]);
+interest_regions('c') = Polyhedron([9 13; 9 16; 10 16; 10 13]);
+interest_regions('d') = Polyhedron([17 -2; 17 1; 18 1; 18 -2]);
+interest_regions('e') = Polyhedron([17 -12; 17 -10; 19 -10; 19 -12]);
 hold on;
 % Plot regions
 k = interest_regions.keys;
@@ -219,21 +219,57 @@ for i=1:length(v)
     end
 end
 
-%% Print results
+%% Print results and form PDDL string
+    pddl_properties = '';
    fprintf('Pairwise distances:\n');
 for i=1:length(cost_matrix)
    element = cost_matrix{i};
    fprintf('%s  ->  %s  [%.3f]  [%.3f]\n', element{1}, element{2}, element{3}, element{4});
+   pddl_properties = sprintf('%s\n(can_traverse quad0 loc-%s loc-%s) (= (cost loc-%s loc-%s) %.3f) (= (mintime loc-%s loc-%s) %.3f) ',pddl_properties, element{1}, element{2}, element{1}, element{2}, element{3}, element{1}, element{2}, element{4});
 end
 
 %% Write PDDL actions from all pairs linear trajectories
-
+pddl_problem = fileread('pddl/problem.template');
+pddl_problem = sprintf(pddl_problem, pddl_properties);
+fid = fopen('pddl/problem_matlab.pddl', 'w');
+fprintf(fid, pddl_problem);
+fclose(fid);
 
 %% Call COLIN, PDDL planner
-
-
+disp('Running PDDL planner...')
+cheat = 1;
+if cheat
+     colin_status = 0;
+     colin_out = fileread('pddl/example_solution.plan');
+else
+    [colin_status, colin_out] = system('pddl/colin-cplex -E pddl/domain.pddl pddl/problem_matlab.pddl');
+end
+disp('PDDL Planner returned.')
 %% Extract travel action from plan
+succesful_plan = colin_status == 0 & regexp(colin_out, 'Solution Found');
 
+path_regex = '\(navigate quad0 loc-([A-z,0-9]*) loc-([A-z,0-9]*)\)';
+navigate_paths = regexp(colin_out, path_regex, 'tokens');
+
+%% Compute and plot linear trajectories
+
+for i=1:length(navigate_paths)
+    region_name1 = navigate_paths{i}{1};
+    region_name2 = navigate_paths{i}{2};
+    fprintf('Path from %s to %s.\n', region_name1, region_name2);
+    region1 = interest_regions(region_name1);
+    region2 = interest_regions(region_name2);
+    safe_reg_path = extractAPSPpath(paths, interest_to_safe(region_name1), interest_to_safe(region_name2));
+    [ytraj, cost, time] = findLinearTrajectory(safe_regions(safe_reg_path), region1, region2, MAX_VEL);
+    tmax = ytraj.tspan(2);
+    t = 0:0.01:tmax;
+    xtr = ytraj.eval(t);
+    hold on
+    line_plot = plot(xtr(1,:), xtr(2,:), 'g--', 'LineWidth', 2.5);
+
+    pause();
+    delete(line_plot);
+end
 
 %% Compute smooth trajectories for each travel activity
 
