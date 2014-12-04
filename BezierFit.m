@@ -2,7 +2,7 @@
 % orientations), safe regions and maximum curvature
 
 %% Setup
-figure(1);
+figure(2);
 clf; hold on; grid on;
 
 % Configuration
@@ -15,6 +15,7 @@ start_ori = -3*pi/6;
 goal = [11;2];
 goal_ori = -pi/2-pi/4; %pi/3;
 
+V = {};
 V{1} = [0 0; 0 3; 7 -1; 7 -4];
 % V{2} = [4 -1; 6 12; 10 12; 9 -2];
 V{2} = [6.1 -1; 6 12; 10 12; 9 -2];
@@ -38,6 +39,7 @@ plot([goal(1) goal_vec(1)], [goal(2) goal_vec(2)], 'k')
 
 %% Fit Bezier Curve
 constraints = [];
+P = {};
 % Curve 1 degree 4, 5 control points
 P{1}{1} = start';
 
@@ -208,6 +210,7 @@ sol = optimize(constraints, obj, options)
 
 %% Convert solution and plot
 Psol = {}
+figure(2);
 hold on;
 for i=1:3
     li = length(P{i});

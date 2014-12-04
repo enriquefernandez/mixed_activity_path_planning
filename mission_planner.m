@@ -102,6 +102,9 @@ handles.obs(j) = patch(obstacle_pts(1,k,j), obstacle_pts(2,k,j), 'k');
 end
 
 %% Compute safe IRIS regions
+writerObj = VideoWriter('videos/safe_regions.mpeg');
+writerObj.FrameRate = 1;
+open(writerObj);
 
 seeds = [interest_reg_means' [14 -6]'];
 
@@ -115,12 +118,17 @@ for j = 1:length(safe_regions)
     V = V(1:2, convhull(V(1,:), V(2,:)));
     handles.region_p(j) = plot(V(1,:), V(2,:), 'Color', 'k', 'LineStyle', '--', 'LineWidth', 0.5);
     th = linspace(0,2*pi,100);
+%     frame = getframe(gcf);
+    figinfo = hardcopy(figure(1),'-dzbuffer','-r0');
+    writeVideo(writerObj, im2frame(figinfo));
+%     writeVideo(writerObj,frame);
+    pause(0.1);
     %     y = [cos(th);sin(th)];
     %     x = bsxfun(@plus, safe_regions(j).C(1:2,1:2)*y, safe_regions(j).d(1:2));
     %     handles.region_e(j) = plot(x(1,:), x(2,:), 'Color', [.3,.3,.9], 'LineStyle', '-', 'LineWidth', 1);
 %     handles.region_seed(j) = plot(safe_regions(j).point(1), safe_regions(j).point(2), 'go', 'MarkerSize', 5, 'MarkerFaceColor', 'g');
 end
-
+close(writerObj);
 
 %% Compute safe regions graph and APSP
 
@@ -175,6 +183,10 @@ end
 
 
 %% Find all pairs linear trajectories: distances + time
+writerObj = VideoWriter('videos/allpairs_lines.mpeg');
+writerObj.FrameRate = 5;
+open(writerObj);
+
 cost_matrix = {};
 k = interest_regions.keys;
 v = interest_regions.values;
@@ -212,12 +224,16 @@ for i=1:length(v)
             end
             line_plot = plot(xtr(1,:), xtr(2,:), 'g--', 'LineWidth', 3.5);
             
+            figinfo = hardcopy(figure(1),'-dzbuffer','-r0');
+            writeVideo(writerObj, im2frame(figinfo));
             pause(0.1);
             delete(line_plot);
             delete(region_path);
         end
     end
 end
+
+close(writerObj);
 
 %% Print results and form PDDL string
     pddl_properties = '';
@@ -253,6 +269,9 @@ navigate_paths = regexp(colin_out, path_regex, 'tokens');
 
 %% Compute and plot linear trajectories
 
+lin_trajectories = {};
+if exist('all_line_plots') & ishandle(all_line_plots), delete(all_line_plots), end;
+all_line_plots = []
 for i=1:length(navigate_paths)
     region_name1 = navigate_paths{i}{1};
     region_name2 = navigate_paths{i}{2};
@@ -264,15 +283,18 @@ for i=1:length(navigate_paths)
     tmax = ytraj.tspan(2);
     t = 0:0.01:tmax;
     xtr = ytraj.eval(t);
+    lin_trajectories{i} = xtr;
     hold on
-    line_plot = plot(xtr(1,:), xtr(2,:), 'g--', 'LineWidth', 2.5);
+    all_line_plots(i) = plot(xtr(1,:), xtr(2,:), 'g.', 'LineWidth', 0.5);
 
-    pause();
-    delete(line_plot);
+%     pause();
+%     delete(line_plot);
 end
 
 %% Compute smooth bezier trajectories for each travel activity
 bez_trajectories = {};
+if exist('all_bez_plots') & ishandle(all_bez_plots), delete(all_bez_plots), end;
+all_bez_plots = [];
 for i=1:length(navigate_paths)
     region_name1 = navigate_paths{i}{1};
     region_name2 = navigate_paths{i}{2};
@@ -286,14 +308,29 @@ for i=1:length(navigate_paths)
 %         plot(Psol{i}(:,1), Psol{i}(:,2), '+r')    
     t=0:0.0001:1;
     bez_t = bezPart.evaluate(t);
-    bez_plot = plot(bez_t(:,1), bez_t(:,2),'b--');
+    all_bez_plots(i) = plot(bez_t(:,1), bez_t(:,2),'b--', 'LineWidth', 0.5);
     bez_trajectories{i} = bez_t;
     hold on
     
 
-    pause(1);
-    delete(bez_plot);
+    pause();
+%     delete(bez_plot);
 end
+
+%% Show bezier paths
+bez_plot = [];
+writerObj = VideoWriter('videos/all_bez_paths.mpeg');
+writerObj.FrameRate = 1;
+open(writerObj);
+for i=1:length(bez_trajectories)
+    xtr = bez_trajectories{i};
+    bez_plot(i) = plot(xtr(:,1), xtr(:,2), 'm-','LineWidth', 3.5)
+    figinfo = hardcopy(figure(1),'-dzbuffer','-r0');
+    writeVideo(writerObj, im2frame(figinfo));
+    pause()
+    delete(bez_plot(i))
+end
+close(writerObj);
 
 %% Compute smooth SOS poly trajectories for each travel activity
 sos_trajectories = {};
@@ -325,11 +362,28 @@ for i=1:length(navigate_paths)
     delete(sos_plot);
 end
 
-%% Load SOS paths
-sos_plot = [];
+%% Load all SOS paths
+% delete(sos_plot)
+all_sos_plots = [];
 for i=1:length(sos_trajectories)
     xtr = sos_trajectories{i};
-    sos_plot(i) = plot(xtr(1,:), xtr(2,:), 'm--')    
+    all_sos_plots(i) = plot(xtr(1,:), xtr(2,:), 'b--', 'LineWidth', 0.5)    
     pause()
-    delete(sos_plot(i))
+%     delete(sos_plot(i))
 end
+
+%% SOS video 
+% delete(sos_plot)
+sos_plots = [];
+writerObj = VideoWriter('videos/all_sos_paths.mpeg');
+writerObj.FrameRate = 1;
+open(writerObj);
+for i=1:length(sos_trajectories)
+    xtr = sos_trajectories{i};
+    sos_plots(i) = plot(xtr(1,:), xtr(2,:),  'm-','LineWidth', 3.5)
+    figinfo = hardcopy(figure(1),'-dzbuffer','-r0');
+    writeVideo(writerObj, im2frame(figinfo));
+    pause()
+    delete(sos_plots(i))
+end
+close(writerObj);

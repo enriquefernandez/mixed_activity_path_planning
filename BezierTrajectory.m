@@ -23,9 +23,12 @@ classdef BezierTrajectory
         function plot(obj)
             t = 0:0.01:1;            
             traj = obj.evaluate(t);
-            figure(1); hold on;
-            plot(obj.P(:,1), obj.P(:,2), '+-r')
+            figure(2); hold on;
+            plot(obj.P(:,1), obj.P(:,2), '+r', 'MarkerSize', 20)
             plot(traj(:,1), traj(:,2), 'b')
+            % Convex hull plot
+            hull = convhull(obj.P);
+            plot(obj.P(hull,1), obj.P(hull,2),'--r');
         end
         
         function traj = getDerivative(obj, d, t)

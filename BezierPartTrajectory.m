@@ -112,11 +112,14 @@ classdef BezierPartTrajectory
         function plot(obj)
             t = 0:0.01:1;            
             traj = obj.evaluate(t);
-            figure(1); hold on;
+            figure(2); hold on;
             % Control points
             for j=1:length(obj.P)
                 Pj = obj.P{j};
-                plot(Pj(:,1), Pj(:,2), '+-r')
+                plot(Pj(:,1), Pj(:,2), '+r', 'MarkerSize', 20)
+                % Convex hull plot
+                hull = convhull(Pj);
+                plot(Pj(hull,1), Pj(hull,2),'--r');
             end
             plot(traj(:,1), traj(:,2), 'b')
         end
