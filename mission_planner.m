@@ -102,9 +102,9 @@ handles.obs(j) = patch(obstacle_pts(1,k,j), obstacle_pts(2,k,j), 'k');
 end
 
 %% Compute safe IRIS regions
-writerObj = VideoWriter('videos/safe_regions.mpeg');
-writerObj.FrameRate = 1;
-open(writerObj);
+% writerObj = VideoWriter('videos/safe_regions.mpeg');
+% writerObj.FrameRate = 1;
+% open(writerObj);
 
 seeds = [interest_reg_means' [14 -6]'];
 
@@ -119,16 +119,17 @@ for j = 1:length(safe_regions)
     handles.region_p(j) = plot(V(1,:), V(2,:), 'Color', 'k', 'LineStyle', '--', 'LineWidth', 0.5);
     th = linspace(0,2*pi,100);
 %     frame = getframe(gcf);
-    figinfo = hardcopy(figure(1),'-dzbuffer','-r0');
-    writeVideo(writerObj, im2frame(figinfo));
+%     figinfo = hardcopy(figure(1),'-dzbuffer','-r0');
+%     writeVideo(writerObj, im2frame(figinfo));
 %     writeVideo(writerObj,frame);
-    pause(0.1);
+%     export_fig(sprintf('figures/iris_regions/iris_%02i.pdf', j))
+    pause();
     %     y = [cos(th);sin(th)];
     %     x = bsxfun(@plus, safe_regions(j).C(1:2,1:2)*y, safe_regions(j).d(1:2));
     %     handles.region_e(j) = plot(x(1,:), x(2,:), 'Color', [.3,.3,.9], 'LineStyle', '-', 'LineWidth', 1);
 %     handles.region_seed(j) = plot(safe_regions(j).point(1), safe_regions(j).point(2), 'go', 'MarkerSize', 5, 'MarkerFaceColor', 'g');
 end
-close(writerObj);
+% close(writerObj);
 
 %% Compute safe regions graph and APSP
 
@@ -183,13 +184,14 @@ end
 
 
 %% Find all pairs linear trajectories: distances + time
-writerObj = VideoWriter('videos/allpairs_lines.mpeg');
-writerObj.FrameRate = 5;
-open(writerObj);
+% writerObj = VideoWriter('videos/allpairs_lines.mpeg');
+% writerObj.FrameRate = 5;
+% open(writerObj);
 
 cost_matrix = {};
 k = interest_regions.keys;
 v = interest_regions.values;
+plot_count=1;
 for i=1:length(v)
     region_name1 = k{i};
     region1 = v{i};
@@ -224,16 +226,18 @@ for i=1:length(v)
             end
             line_plot = plot(xtr(1,:), xtr(2,:), 'g--', 'LineWidth', 3.5);
             
-            figinfo = hardcopy(figure(1),'-dzbuffer','-r0');
-            writeVideo(writerObj, im2frame(figinfo));
-            pause(0.1);
+%             figinfo = hardcopy(figure(1),'-dzbuffer','-r0');
+%             writeVideo(writerObj, im2frame(figinfo));
+            export_fig(sprintf('figures/linear_paths/line_%02i.pdf', plot_count))
+            pause();
+            plot_count = plot_count+1;
             delete(line_plot);
             delete(region_path);
         end
     end
 end
 
-close(writerObj);
+% close(writerObj);
 
 %% Print results and form PDDL string
     pddl_properties = '';
@@ -295,6 +299,7 @@ end
 bez_trajectories = {};
 if exist('all_bez_plots') & ishandle(all_bez_plots), delete(all_bez_plots), end;
 all_bez_plots = [];
+bez_times = [];
 for i=1:length(navigate_paths)
     region_name1 = navigate_paths{i}{1};
     region_name2 = navigate_paths{i}{2};
@@ -304,16 +309,24 @@ for i=1:length(navigate_paths)
     reg1c = mean(region1.V);
     reg2c = mean(region2.V);
     safe_reg_path = extractAPSPpath(paths, interest_to_safe(region_name1), interest_to_safe(region_name2));
+    tic
     bezPart = findBezierTrajectory(safe_regions(safe_reg_path), reg1c', reg2c', MAX_VEL);
 %         plot(Psol{i}(:,1), Psol{i}(:,2), '+r')    
+    bez_times(i) = toc;
     t=0:0.0001:1;
     bez_t = bezPart.evaluate(t);
-    all_bez_plots(i) = plot(bez_t(:,1), bez_t(:,2),'b--', 'LineWidth', 0.5);
+    if i>1
+        set(all_bez_plots(i-1), 'Color',[0.2 0.2 0.2])
+        set(all_bez_plots(i-1), 'LineWidth',0.3)
+        set(all_bez_plots(i-1), 'LineStyle','--')
+    end
+    all_bez_plots(i) = plot(bez_t(:,1), bez_t(:,2),'b-', 'LineWidth', 0.5);
     bez_trajectories{i} = bez_t;
     hold on
     
+%     export_fig(sprintf('figures/bezier_paths/bezier_%02i.pdf', i))
 
-    pause();
+    pause(0.1);
 %     delete(bez_plot);
 end
 
@@ -334,6 +347,7 @@ close(writerObj);
 
 %% Compute smooth SOS poly trajectories for each travel activity
 sos_trajectories = {};
+sos_times = [];
 for i=1:length(navigate_paths)
     region_name1 = navigate_paths{i}{1};
     region_name2 = navigate_paths{i}{2};
@@ -345,20 +359,21 @@ for i=1:length(navigate_paths)
     
     safe_reg_path = extractAPSPpath(paths, interest_to_safe(region_name1), interest_to_safe(region_name2));
     
-    tic
     poly_deg = 3;
     num_seg = 10;
+    tic
     ytraj = findMixedTrajectory(safe_regions(safe_reg_path), reg1c', reg2c', lb, ub, [], poly_deg, num_seg, [])
+    sos_times(i) = toc;
     tmax = ytraj.tspan(2);
     t = 0:0.01:tmax;
     xtr = ytraj.eval(t);
     hold on
     sos_plot = plot(xtr(1,:), xtr(2,:), 'm')
     sos_trajectories{i} = xtr;
-    toc
+    
     
 
-    pause(1);
+    pause(0.1);
     delete(sos_plot);
 end
 

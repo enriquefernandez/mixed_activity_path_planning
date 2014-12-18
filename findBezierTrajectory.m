@@ -87,7 +87,7 @@ end
 
 %% Arc length objective
 % http://pomax.github.io/bezierinfo/#arclength
-[x, w] = lgwt(20,0,1)
+[x, w] = lgwt(20,0,1);
 obj = 20 * obj;
 % obj = 0;
 P_joint = {}
@@ -117,7 +117,7 @@ sol = optimize(constraints, obj, options);
 
 %% Convert solution and plot
 % figure(1);
-Psol = {}
+Psol = {};
 hold on;
 for i=1:length(P)
     li = length(P{i});
